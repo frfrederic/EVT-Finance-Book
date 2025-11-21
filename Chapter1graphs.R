@@ -86,3 +86,4 @@ ggplot(returns_tail_large, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
   ) +
   theme_bw()
 
+print("Hello World")
