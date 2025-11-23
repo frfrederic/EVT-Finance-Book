@@ -1,5 +1,10 @@
 library(ggplot2)
 library(dplyr)
+library(readxl)
+library(car)
+library(MASS)
+
+set.seed(67)
 
 returns = read.csv("snp_returns_70_25.csv")
 
@@ -15,6 +20,12 @@ returns$Return_norm_rank = qnorm(p, mean = 0, sd = 1)
 returns$Return_log = log(1 + returns$Return / 100)
 returns$Empirical_Prob = returns$rank / n
 
+banks_returns = read_excel("4bedrijvenR.xls",
+                           sheet = "Sheet1",
+                           range = "$E$1:$F$3283",
+                           col_names = FALSE)
+names(banks_returns) = c("ING", "ABN AMRO")
+banks_returns_z = as.data.frame(scale(banks_returns))
 
 ### Bar chart for unmodified returns ###
 ggplot(returns, aes(x = Date, y = Return)) +
@@ -39,6 +50,49 @@ ggplot(returns, aes(x = Date, y = Return_norm_rank)) +
   coord_cartesian(ylim = c(-8, 8),
                   xlim = c(as.Date("1972-01-05"), as.Date("2022-12-31"))) +
   theme_bw()
+
+#############ING/ABNAMRO scatterplots###################################
+
+ggplot(banks_returns, aes(ING,`ABN AMRO`)) +
+  geom_point(shape = "circle", size = 0.8, col = "steelblue") +
+  stat_ellipse(level = 0.95, linewidth = 1.5, col = "darkblue") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+ggplot(banks_returns_z, aes(ING,`ABN AMRO`)) +
+  geom_point(shape = "circle", size = 0.8, col = "steelblue") +
+  stat_ellipse(level = 0.95, linewidth = 1.5, col = "darkblue") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+rho = cor(banks_returns)
+sim_normal = mvrnorm(n = nrow(banks_returns), mu = c(0,0), Sigma = rho)
+sim_normal = as.data.frame(sim_normal)
+colnames(sim_normal) = c("ING_sim", "ABNAMRO_sim")
+
+rank_sim_ING = rank(sim_normal$ING_sim)
+rank_sim_ABNAMRO = rank(sim_normal$ABNAMRO_sim)
+
+sorted_ING = sort(banks_returns$ING)
+sorted_ABNAMRO = sort(banks_returns$`ABN AMRO`)
+
+# map the original data according to simulated ranks
+ING_new = sorted_ING[rank_sim_ING]
+ABNAMRO_new = sorted_ABNAMRO[rank_sim_ABNAMRO]
+
+# combine into a new data frame
+banks_reassigned = data.frame(
+  ING = ING_new,
+  ABNAMRO = ABNAMRO_new
+)
+
+ggplot(banks_reassigned, aes(ING,ABNAMRO)) +
+  geom_point(shape = "circle", size = 0.8, col = "steelblue") +
+  stat_ellipse(level = 0.95, linewidth = 1.5, col = "darkblue") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+#####################################################################
 
 #Scatterplot for the log returns vs empirical probability
 
