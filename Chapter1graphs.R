@@ -27,12 +27,13 @@ ggplot(returns, aes(x = Date, y = Return)) +
   coord_cartesian(ylim = c(-10, 10), xlim = c(as.Date("1972-01-05"), as.Date("2022-12-31"))) +
   theme_bw()
 
+
 # Bar chart for ranked normal data
 ggplot(returns, aes(x = Date, y = Return_norm_rank)) +
   geom_col(fill = "steelblue", width = 2) +
   labs(title = "Daily Rank-based Normalized S&P500 Returns",
        x = "Date",
-       y = "Normal Quantile (Φ⁻¹(p))") +
+       y = "Normal Quantile") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_x_date(date_breaks = "10 years", date_labels = "%Y") +
   coord_cartesian(ylim = c(-8, 8),
@@ -85,5 +86,3 @@ ggplot(returns_tail_large, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
     title = "100 Lowest Empirical Probabilities of Log Returns"
   ) +
   theme_bw()
-
-print("Hello World")
