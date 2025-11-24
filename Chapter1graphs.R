@@ -3,8 +3,12 @@ library(dplyr)
 library(readxl)
 library(car)
 library(MASS)
+library(scales)
+library(patchwork)
 
 set.seed(67)
+
+############## imports and data cleaning #############
 
 returns = read.csv("snp_returns_70_25.csv")
 
@@ -26,6 +30,14 @@ banks_returns = read_excel("4bedrijvenR.xls",
                            col_names = FALSE)
 names(banks_returns) = c("ING", "ABN AMRO")
 banks_returns_z = as.data.frame(scale(banks_returns))
+
+pareto = read_excel("ParetoData.xlsx")
+pareto1843 = pareto[pareto$Year == 1843, ]
+pareto1843$Frequency = pareto1843$Count / sum(pareto1843$Count)
+pareto1880 = pareto[pareto$Year == 1880, ]
+pareto1880$Frequency = pareto1880$Count / sum(pareto1880$Count)
+
+################ S&P500 returns graphed ##################
 
 ### Bar chart for unmodified returns ###
 ggplot(returns, aes(x = Date, y = Return)) +
@@ -61,6 +73,7 @@ ggplot(banks_returns, aes(ING,`ABN AMRO`)) +
 
 ggplot(banks_returns_z, aes(ING,`ABN AMRO`)) +
   geom_point(shape = "circle", size = 0.8, col = "steelblue") +
+  coord_cartesian(xlim = c(-6, 6), ylim = c(-8, 8)) +
   stat_ellipse(level = 0.95, linewidth = 1.5, col = "darkblue") +
   theme_bw() +
   theme(panel.grid = element_blank())
@@ -69,6 +82,13 @@ rho = cor(banks_returns)
 sim_normal = mvrnorm(n = nrow(banks_returns), mu = c(0,0), Sigma = rho)
 sim_normal = as.data.frame(sim_normal)
 colnames(sim_normal) = c("ING_sim", "ABNAMRO_sim")
+
+ggplot(sim_normal, aes(ING_sim, ABNAMRO_sim)) +
+  geom_point(shape = "circle", size = 0.8, col = "steelblue") +
+  coord_cartesian(xlim = c(-6, 6), ylim = c(-8, 8)) +
+  stat_ellipse(level = 0.95, linewidth = 1.5, col = "darkblue") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
 
 rank_sim_ING = rank(sim_normal$ING_sim)
 rank_sim_ABNAMRO = rank(sim_normal$ABNAMRO_sim)
@@ -92,9 +112,50 @@ ggplot(banks_reassigned, aes(ING,ABNAMRO)) +
   theme_bw() +
   theme(panel.grid = element_blank())
 
-#####################################################################
+####### Pareto data analysis ####################################
 
-#Scatterplot for the log returns vs empirical probability
+sp1 = ggplot(pareto1843, aes(Income, Count)) +
+  geom_point(shape = "circle", size = 2, col = "steelblue") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+sp2 = ggplot(pareto1880, aes(Income, Count)) +
+  geom_point(shape = "circle", size = 2, col = "darkred") +
+  theme_bw() +
+  scale_y_continuous(labels = label_number()) +
+  theme(panel.grid = element_blank())
+
+(sp1 + sp2) + plot_annotation(title = "1843 vs. 1880 Incomes", theme = theme(
+  plot.title = element_text(hjust = 0.5)  # hjust = 0.5 centers the title
+))
+
+
+sp_log = ggplot(pareto, aes(log(Income), log(Count), color = factor(Year))) +
+  geom_point(shape = 16, size = 2) +
+  scale_color_manual(values = c("1843" = "steelblue", "1880" = "darkred"),
+                     name = "Year") +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+
+sp_log
+
+hist1 = ggplot(pareto1843, aes(x = factor(Income), y = Frequency)) +
+  geom_col(fill = "steelblue", color = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), labels = label_number()) +
+  theme_bw() +
+  labs(x = "Income", y = "Count")
+
+hist2 = ggplot(pareto1880, aes(x = factor(Income), y = Frequency)) +
+  geom_col(fill = "darkred", color = "black") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05)), labels = label_number()) +
+  theme_bw() +
+  labs(x = "Income", y = "Count")
+
+(hist1 + hist2) + plot_annotation(title = "1843 vs. 1880 Incomes", theme = theme(
+  plot.title = element_text(hjust = 0.5)  # hjust = 0.5 centers the title
+))
+
+#######Scatterplot for the log returns vs empirical probability######
 
 returns_tail = returns %>%
   arrange(Empirical_Prob) %>%
