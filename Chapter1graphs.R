@@ -5,6 +5,8 @@ library(car)
 library(MASS)
 library(scales)
 library(patchwork)
+library(moments)
+library(lubridate)
 
 set.seed(67)
 
@@ -23,6 +25,9 @@ p = (returns$rank - 0.5) / n
 returns$Return_norm_rank = qnorm(p, mean = 0, sd = 1)
 returns$Return_log = log(1 + returns$Return / 100)
 returns$Empirical_Prob = returns$rank / n
+mu_returns = mean(returns$Return_log)
+sigma_returns = (returns$Return_log)
+returns$Return_log_sim = qnorm(p, mean = mu_returns, sd = sigma_returns)
 
 banks_returns = read_excel("4bedrijvenR.xls",
                            sheet = "Sheet1",
@@ -36,6 +41,14 @@ pareto1843 = pareto[pareto$Year == 1843, ]
 pareto1843$Frequency = pareto1843$Count / sum(pareto1843$Count)
 pareto1880 = pareto[pareto$Year == 1880, ]
 pareto1880$Frequency = pareto1880$Count / sum(pareto1880$Count)
+
+exchange = read.csv("DEXUSUK.csv")
+exchange = exchange[-1, ]
+exchange = na.omit(exchange)
+exchange$i = seq_len(nrow(exchange))
+exchange$observation_date = as.Date(exchange$observation_date, format = "%d-%m-%y")
+
+
 
 ################ S&P500 returns graphed ##################
 
@@ -171,12 +184,22 @@ ggplot(returns_tail, aes(x = -1 * Return_log, y = Empirical_Prob)) +
   theme_bw()
 
 #Same plot but with log probabilities
-ggplot(returns_tail, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
+ggplot(returns_tail, aes(x = log(-1 *Return_log), y = log(Empirical_Prob))) +
   geom_point(color = "firebrick") +
   labs(
-    x = "Log Return",
-    y = "Empirical Probability (Rank / n)",
-    title = "100 Lowest Log Empirical Probabilities of Log Returns"
+    x = "Log Log-Return",
+    y = " Log Empirical Probability (Rank / n)",
+    title = "100 Lowest Log Empirical Probabilities of Log Log-Returns"
+  ) +
+  theme_bw()
+
+#Same plot but with log probabilities
+ggplot(returns_tail, aes(x = log(-1 * Return_log_sim), y = log(Empirical_Prob))) +
+  geom_point(color = "firebrick") +
+  labs(
+    x = "Simulated Log Log-Return",
+    y = " Log Empirical Probability (Rank / n)",
+    title = "100 Lowest Log Empirical Probabilities of Log Log-Returns"
   ) +
   theme_bw()
 
@@ -193,11 +216,36 @@ ggplot(returns_tail_large, aes(x = -1 * Return_log, y = Empirical_Prob)) +
   ) +
   theme_bw()
 
-ggplot(returns_tail_large, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
+ggplot(returns_tail_large, aes(x = log(-1 * Return_log), y = log(Empirical_Prob))) +
   geom_point(color = "firebrick") +
   labs(
-    x = "Log Return",
-    y = "Empirical Probability (Rank / n)",
-    title = "2000 Lowest Log Empirical Probabilities of Log Returns"
+    x = "Log Log-Return",
+    y = " Log Empirical Probability (Rank / n)",
+    title = "2000 Lowest Log Empirical Probabilities of Log Log-Returns"
   ) +
+  theme_bw()
+
+############# Central Moments for USD/GBP returns ###################
+
+#Mean
+
+exchange$cum_mean = cummean(exchange$Return)
+ggplot(exchange, aes(x = i, y = 100 * cum_mean)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(
+    x = "Number of observations (i)",
+    y = "Cumulative mean of Return",
+    title = "Running Mean of Returns"
+  ) +
+  theme_bw()
+
+#Variance
+
+exchange$var_cum = sapply(seq_along(exchange$Return), function(i) {
+  var(exchange$Return[1:i])
+})
+
+ggplot(exchange, aes(x = seq_along(Return), y = var_cum * 10000)) +
+  geom_line(color = "steelblue") +
+  labs(x = "Number of observations (i)", y = "Cumulative variance", title = "Running Variance of Returns") +
   theme_bw()
