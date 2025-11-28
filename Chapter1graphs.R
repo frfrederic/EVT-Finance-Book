@@ -176,7 +176,7 @@ ggplot(returns_tail, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
   labs(
     x = "Log Return",
     y = "Empirical Probability (Rank / n)",
-    title = "100 Lowest Empirical Probabilities of Log Returns"
+    title = "100 Lowest Log Empirical Probabilities of Log Returns"
   ) +
   theme_bw()
 
@@ -189,7 +189,7 @@ ggplot(returns_tail_large, aes(x = -1 * Return_log, y = Empirical_Prob)) +
   labs(
     x = "Log Return",
     y = "Empirical Probability (Rank / n)",
-    title = "100 Lowest Empirical Probabilities of Log Returns"
+    title = "2000 Lowest Empirical Probabilities of Log Returns"
   ) +
   theme_bw()
 
@@ -198,6 +198,6 @@ ggplot(returns_tail_large, aes(x = -1 * Return_log, y = log(Empirical_Prob))) +
   labs(
     x = "Log Return",
     y = "Empirical Probability (Rank / n)",
-    title = "100 Lowest Empirical Probabilities of Log Returns"
+    title = "2000 Lowest Log Empirical Probabilities of Log Returns"
   ) +
   theme_bw()
